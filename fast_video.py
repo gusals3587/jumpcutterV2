@@ -26,13 +26,6 @@ subprocess.call(extractAudio, shell=True)
 out = cv2.VideoWriter("spedup.mp4", fourcc, fps, (width, height))
 sampleRate, audioData = wavfile.read("output.wav")
 
-def randomDrop():
-    while True:
-        for i in [False, True, True]:
-            yield i
-
-dropper = randomDrop()
-
 skipped = 0
 
 channels = int(audioData.shape[1])
@@ -58,11 +51,6 @@ def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
             writer.write(frames[frameIndex])
         nFrames += 1
 
-
-"""
-challenge: I can't get the audio working because if you make a very small
-section 3x faster, you have to throw everything away, leaving nothing
-"""
 
 normal = 0
 # 0 for silent, 1 for normal
