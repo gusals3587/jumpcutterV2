@@ -18,7 +18,7 @@ due to the modifications, you can no longer specify silent-threshold, sounded_sp
 PS, if you want sounded speech speedup, I would recommend just speeding up the video on the player
 
 # Usage
-`python fast_video.py {video file name} {silent speed(float)}
+`python fast_video.py {video file name} {silent speed(float)}`
 
 # heads up
 I've only tested this with mp4 file, not sure about other format
