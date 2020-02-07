@@ -10,6 +10,7 @@ assignees: ''
 **First off, your system's info**
 
 OS:
+python --version:
 
 **the description of the error/bug**
 
