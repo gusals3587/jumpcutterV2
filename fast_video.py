@@ -129,7 +129,7 @@ cap.release()
 out.release()
 cv2.destroyAllWindows()
 
-mergeCommand = "ffmpeg -i spedup.mp4 -i spedupAudio.wav -c:v copy -c:a aac faster_{}".format(videoFile)
+mergeCommand = "ffmpeg -i spedup.mp4 -i spedupAudio.wav -c:v libx264 -c:a aac faster_{}".format(videoFile)
 error = subprocess.call(mergeCommand, shell=True)
 if error == 0:
     removeCommand = "rm output.wav spedup.mp4 spedupAudio.wav"
