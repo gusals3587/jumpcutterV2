@@ -133,5 +133,7 @@ mergeCommand = "ffmpeg -i spedup.mp4 -i spedupAudio.wav -c:v libx264 -c:a aac fa
 error = subprocess.call(mergeCommand, shell=True)
 if error == 0:
     removeCommand = "rm output.wav spedup.mp4 spedupAudio.wav"
-    subprocess.call(removeCommand, shell=True)
+    error = subprocess.call(removeCommand, shell=True)
+    if error != 0:
+        error = subprocess.call("del output.wav spedup.mp4 spedupAudio.wav", shell=True)
 
