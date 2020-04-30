@@ -130,7 +130,7 @@ out.release()
 cv2.destroyAllWindows()
 
 outFile = "{}_faster{}".format(videoFile[:videoFile.rfind('.')],videoFile[videoFile.rfind('.'):])
-mergeCommand = "ffmpeg -i spedup.mp4 -i spedupAudio.wav -c:v libx264 -c:a aac {}".format(outFile)
+mergeCommand = "ffmpeg -i spedup.mp4 -i spedupAudio.wav -c:v copy -c:a aac {}".format(outFile)
 
 error = subprocess.call(mergeCommand, shell=True)
 if error == 0:
