@@ -18,10 +18,11 @@ Due to the modifications, you can no longer specify sounded_speed, frame_margin,
 PS, if you want sounded speech speedup, I would recommend just speeding up the video on the player.
 
 # Usage
-`python3 fast_video.py {video file name} --silentSpeed float --silentThreshold float`
+`python3 fast_video.py {video file name} --silentSpeed {float} --silentThreshold {float}`
 
-Using shorts
-`python3 fast_video.py {video file name} -s float -t float`
+Using shorts:
+
+`python3 fast_video.py {video file name} -s {float} -t {float}`
 
 > Note: On Linux and Windows, `python3` doesn't work. Use `python` instead.
 # heads up
