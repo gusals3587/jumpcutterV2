@@ -1,17 +1,34 @@
-# for now, speed up silence by 2.0x, therfore, dropping 1 out of 3 frames
-# "silence" is considered value below 700
+'''jumpcutterV2.py'''
 
+# External libraries
 import cv2
 import numpy as np
 from scipy.io import wavfile
-import math
 from audiotsm import phasevocoder
 from arrayWav import ArrReader, ArrWriter
-import sys
-import subprocess
 
-videoFile = sys.argv[1]
-silentSpeed = float(sys.argv[2])
+# Internal libraries
+import math
+import sys
+import time
+import datetime
+import subprocess
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('videoFile',
+    help='the path to the video file you want modified.')
+parser.add_argument('-s', '--silentSpeed', type=float, default=99999,
+    help='the speed that silent frames should be played at.')
+parser.add_argument('-t', '--silentThreshold', type=float, default=0.04,
+    help='the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.')
+args = parser.parse_args()
+
+startTime = time.time()
+
+videoFile = args.videoFile
+silentSpeed = args.silentSpeed
+silentThreshold = args.silentThreshold
 
 cap = cv2.VideoCapture(videoFile)
 
@@ -66,7 +83,7 @@ frameBuffer = []
 while (cap.isOpened()):
     ret, frame = cap.read()
 
-    # 1000 milisecond == 1 second, since samplerate is in seconds, I need to convert this to second as well
+    # since samplerate is in seconds, I need to convert this to second as well
     currentTime = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
     if ret == False:
         break
@@ -81,7 +98,7 @@ while (cap.isOpened()):
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
     # if it's quite
-    if getMaxVolume(audioChunk) < 500:
+    if getMaxVolume(audioChunk) / maxVolume < silentThreshold:
         skipped += 1
         # if the frame is 'switched'
         frameBuffer.append(frame)
@@ -133,10 +150,15 @@ outFile = "{}_faster{}".format(videoFile[:videoFile.rfind('.')],videoFile[videoF
 mergeCommand = "ffmpeg -i spedup.mp4 -i spedupAudio.wav -c:v copy -c:a aac {}".format(outFile)
 
 error = subprocess.call(mergeCommand, shell=True)
+
+print('Finished.')
+timeLength = round(time.time() - startTime, 2)
+minutes = round(timeLength)
+print(f'took {timeLength} seconds ({datetime.timedelta(seconds=minutes)})')
+
 if error == 0:
     removeCommand = "rm output.wav spedup.mp4 spedupAudio.wav"
     rmError = subprocess.call(removeCommand, shell=True)
     # rm is not available on Windows, so rm would return != 0
     if rmError != 0:
         error = subprocess.call("del output.wav spedup.mp4 spedupAudio.wav", shell=True)
-
