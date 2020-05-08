@@ -4,9 +4,7 @@ import numpy as np
 from audiotsm.io import base
 
 class ArrReader(base.Reader):
-    
     pointer = 0
-
     def __init__(self, arr, channels, samplerate, samplewidth):
         self.samples = arr
         self._channels = channels
@@ -16,7 +14,7 @@ class ArrReader(base.Reader):
     @property
     def channels(self):
         return self._channels
-    
+
     @property
     def empty(self):
         return self.samples.shape[0] <= self.pointer
@@ -30,16 +28,12 @@ class ArrReader(base.Reader):
                              "channels as the ArrReader")
 
         end = self.pointer + buffer.shape[1]
-
         frames = self.samples[self.pointer:end].T.astype(np.float32)
 
         n = frames.shape[1]
-
         np.copyto(buffer[:, :n], frames)
         del frames
-
         self.pointer = end
-
         return n
 
     def skip(self, n):
@@ -56,9 +50,7 @@ class ArrReader(base.Reader):
         self.close()
 
 class ArrWriter(base.Writer):
-
     pointer = 0
-
     def __init__(self, arr, channels, samplerate, samplewidth):
         self._channels = channels
         self.output = arr
@@ -95,9 +87,3 @@ class ArrWriter(base.Writer):
 
     def __exit__(self, _1, _2, _3):
         self.close()
-
-
-
-
-    
-    
