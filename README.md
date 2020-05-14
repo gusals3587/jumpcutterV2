@@ -12,6 +12,10 @@ I saw some limits to the approach
 
 I decided to solve it, and heavily modified the code so it can fix all those problems.
 
+# Windows download
+https://github.com/seaty6/jumpcutterV2/releases/latest/download/fast_video.exe
+The above is simply the python file compiled with pyinstaller - it should work on Windows without having to install Python, FFMpeg, or any other dependencies. 
+
 # Differences
 Due to the modifications, you can no longer specify sounded_speed, frame_rate, frame_quality, that is all handled internally. (it also doesn't download youtube videos automatically). I tried to make the code a lot simpler but I'm open to PR request that can still enhance the repo.
 
@@ -24,7 +28,7 @@ Using shorts:
 
 `python3 fast_video.py {video file name} -s {float} -t {float}`
 
-> Note: On Linux and Windows, `python3` doesn't work. Use `python` instead.
+> Note: On Linux and Windows, `python3` doesn't work. Use `python` instead. ALternativly, you could use the executable if on Windows, in the releases tab.
 # heads up
 I've only tested this with mp4 file, not sure about other formats.
 
