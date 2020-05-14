@@ -25,8 +25,8 @@ parser.add_argument('-s', '--silentSpeed', type=float, default=99999,
     help='the speed that silent frames should be played at.')
 parser.add_argument('-t', '--silentThreshold', type=float, default=0.04,
     help='the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.')
-# parser.add_argument('-m', '--frame_margin', type=int, default=4,
-#     help='tells how many frames on either side of speech should be included.')
+parser.add_argument('-m', '--frame_margin', type=int, default=1,
+    help='tells how many frames on either side of speech should be included.')
 args = parser.parse_args()
 
 startTime = time.time()
@@ -34,6 +34,7 @@ startTime = time.time()
 videoFile = args.videoFile
 NEW_SPEED = [args.silentSpeed, 1]
 silentThreshold = args.silentThreshold
+frame_margin = args.frame_margin
 
 cap = cv2.VideoCapture(videoFile)
 
@@ -96,9 +97,9 @@ while (cap.isOpened()):
     audioSampleStart = math.floor(currentTime * sampleRate)
 
     # audioSampleStart + one frame worth of samples
-    audioSampleEnd = audioSampleStart + (sampleRate // fps)
-    switchEnd = audioSampleEnd
-
+    audioSampleEnd = min((audioSampleStart + ((sampleRate // fps) * frame_margin)),(len(audioData)))
+    switchEnd = (audioSampleStart + ((sampleRate // fps)))
+    audioChunkMod = audioData[audioSampleStart:switchEnd]
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
     # if it's quite
@@ -115,8 +116,8 @@ while (cap.isOpened()):
             nFrames += 1
             switchStart = switchEnd
 
-            yPointerEnd = yPointer + audioChunk.shape[0]
-            y[yPointer : yPointerEnd] = audioChunk
+            yPointerEnd = yPointer + audioChunkMod.shape[0]
+            y[yPointer : yPointerEnd] = audioChunkMod
             yPointer = yPointerEnd
         else:
             spedChunk = audioData[switchStart:switchEnd]
@@ -136,12 +137,11 @@ while (cap.isOpened()):
             switchStart = switchEnd
 
         normal = 1
-    if skipped % 1000 == 0:
+    if skipped % 500 == 0:
         print("{} frames inspected".format(skipped))
         skipped += 1
 
 y = y[:yPointer]
-
 wavfile.write("spedupAudio.wav", sampleRate, y)
 
 cap.release()
