@@ -33,7 +33,7 @@ Python:
 Using shorts:
 `fast_video.exe {video file name} -s {float} -t {float}`
 
-> Note: On Linux and Windows, `python3` doesn't work. Use `python` instead. ALternativly, you could use the executable if on Windows, in the releases tab.
+> Note: On Linux and Windows, `python3` doesn't work. Use `python` instead. Alternatively, you could use the executable if on Windows, in the releases tab.
 # Heads up
 Based on Python3
 
