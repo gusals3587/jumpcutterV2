@@ -7,13 +7,19 @@ Carykh's program: https://github.com/carykh/jumpcutter
 
 # Windows download
 https://github.com/seaty6/jumpcutterV2/releases/latest/download/fast_video.exe
-The above is simply the python file compiled with pyinstaller - it should work on Windows without having to install Python, FFMpeg, or any other dependencies. 
+The above is simply the python file compiled with pyinstaller - it should work on Windows without having to install Python, but you will have to install ffmpeg. The easiest way to do this is to install chocolatey and let it do the work for you.
+From an administrative command prompt:
+
+`Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))`
+
+Close, then reopen the command prompt, and run:
+
+`choco install ffmpeg`
+
+And you're done! You can now run the executable.
 
 # Differences
-1. Can no longer specify:
-  a. sounded_speed
-  b. frame_rate
-  c. frame_quality
+1. Can no longer specify: sounded_speed, frame_rate, and frame_quality.
 2. Can't download youtube videos
 3. Doesn't take up a large amount of space by splitting up each frame
 4. Goes much faster.
