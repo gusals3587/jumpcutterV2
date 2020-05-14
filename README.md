@@ -13,7 +13,7 @@ I saw some limits to the approach
 I decided to solve it, and heavily modified the code so it can fix all those problems.
 
 # Differences
-Due to the modifications, you can no longer specify sounded_speed, frame_margin, frame_rate, frame_quality, that is all handled internally. (it also doesn't download youtube videos automatically). I tried to make the code a lot simpler but I'm open to PR request that can still enhance the repo.
+Due to the modifications, you can no longer specify sounded_speed, frame_rate, frame_quality, that is all handled internally. (it also doesn't download youtube videos automatically). I tried to make the code a lot simpler but I'm open to PR request that can still enhance the repo.
 
 PS, if you want sounded speech speedup, I would recommend just speeding up the video on the player.
 
