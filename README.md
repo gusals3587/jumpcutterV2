@@ -18,14 +18,9 @@ The above is simply the python file compiled with pyinstaller - it should work o
 3. Doesn't take up a large amount of space by splitting up each frame
 4. Goes much faster.
 
-
-
 # Usage
-
-
 Windows:
 `fast_video.exe {video file name} --silentSpeed {float} --silentThreshold {float}`
-
 Python:
 `python3 fast_video.py {video file name} --silentSpeed {float} --silentThreshold {float}`
 
@@ -35,3 +30,7 @@ Using shorts:
 > Note: On Linux and Windows, `python3` doesn't work. Use `python` instead. ALternativly, you could use the executable if on Windows, in the releases tab.
 # Heads up
 Based on Python3
+
+# Credits:
+Thanks to https://github.com/gusals3587/jumpcutterV2 for reworking the code to be much more optimized
+Thanks to https://github.com/WyattBlue/jumpcutterV2 for adding back the all but the frame_margin parameter
