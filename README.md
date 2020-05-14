@@ -1,35 +1,37 @@
 # jumpcutterV2
-automatically edits videos, originally inspired by carykh
+Automatically edits videos - Originally inspired by carykh, then inspired by gusals3587, to be later fixed by WyattBlue.
 
-original inspiration: https://www.youtube.com/watch?v=DQ8orIurGxw
+Carykh's video: https://www.youtube.com/watch?v=DQ8orIurGxw
 
-the program he made: https://github.com/carykh/jumpcutter
-
-I saw some limits to the approach
-1. He extracted EVERY frame and put it into a single, giant folder. While that is easier to work with, it require's GBs, maybe even TBs of free storage.
-2. There were some syncing issues involved if it worked with long videos.
-3. While it was working on the audio, it kept making small, temp audio files that made it very slow.
-
-I decided to solve it, and heavily modified the code so it can fix all those problems.
+Carykh's program: https://github.com/carykh/jumpcutter
 
 # Windows download
 https://github.com/seaty6/jumpcutterV2/releases/latest/download/fast_video.exe
 The above is simply the python file compiled with pyinstaller - it should work on Windows without having to install Python, FFMpeg, or any other dependencies. 
 
 # Differences
-Due to the modifications, you can no longer specify sounded_speed, frame_rate, frame_quality, that is all handled internally. (it also doesn't download youtube videos automatically). I tried to make the code a lot simpler but I'm open to PR request that can still enhance the repo.
+1. Can no longer specify:
+  a. sounded_speed
+  b. frame_rate
+  c. frame_quality
+2. Can't download youtube videos
+3. Doesn't take up a large amount of space by splitting up each frame
+4. Goes much faster.
 
-PS, if you want sounded speech speedup, I would recommend just speeding up the video on the player.
+
 
 # Usage
+
+
+Windows:
+`fast_video.exe {video file name} --silentSpeed {float} --silentThreshold {float}`
+
+Python:
 `python3 fast_video.py {video file name} --silentSpeed {float} --silentThreshold {float}`
 
 Using shorts:
-
-`python3 fast_video.py {video file name} -s {float} -t {float}`
+`fast_video.exe {video file name} -s {float} -t {float}`
 
 > Note: On Linux and Windows, `python3` doesn't work. Use `python` instead. ALternativly, you could use the executable if on Windows, in the releases tab.
-# heads up
-I've only tested this with mp4 file, not sure about other formats.
-
-I also use python3, not planning any backward compatibility.
+# Heads up
+Based on Python3
