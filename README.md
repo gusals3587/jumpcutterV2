@@ -1,16 +1,17 @@
 # jumpcutterV2
-Automatically edits videos - Originally inspired by carykh, then inspired by gusals3587, to be later fixed by WyattBlue.
+Automatically edits videos - Originally inspired by carykh.
 
 Carykh's video: https://www.youtube.com/watch?v=DQ8orIurGxw
 
 Carykh's program: https://github.com/carykh/jumpcutter
 
-# Windows download
-https://github.com/seaty6/jumpcutterV2/releases/latest/download/fast_video.exe
+# Windows Download
+[fast_video.exe](https://github.com/seaty6/jumpcutterV2/releases/latest/download/fast_video.exe)
+
 The above is simply the python file compiled with pyinstaller - it should work on Windows without having to install Python, but you will have to install ffmpeg. The easiest way to do this is to install chocolatey and let it do the work for you.
 From an administrative command prompt:
 
-`@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command " [System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"`
+```@"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command " [System.Net.ServicePointManager]::SecurityProtocol = 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"```
 
 Close, then reopen the command prompt, and run:
 
@@ -27,8 +28,10 @@ And you're done! You can now run the executable.
 # Usage
 Windows:
 `fast_video.exe {video file name} --silentSpeed {float} --silentThreshold {float}`
+
 Python:
 `python3 fast_video.py {video file name} --silentSpeed {float} --silentThreshold {float}`
+
 
 Using shorts:
 `fast_video.exe {video file name} -s {float} -t {float}`
@@ -38,5 +41,5 @@ Using shorts:
 Based on Python3
 
 # Credits:
-Thanks to https://github.com/gusals3587/jumpcutterV2 for reworking the code to be much more optimized
-Thanks to https://github.com/WyattBlue/jumpcutterV2 for adding back the all but the frame_margin parameter
+Thanks to [gusals3587](https://github.com/gusals3587/jumpcutterV2) for reworking the code to be much more optimized<br>
+Thanks to [WyattBlue](https://github.com/WyattBlue/jumpcutterV2) for adding back the all but the frame_margin parameter
