@@ -1,4 +1,4 @@
-'''jumpcutterV2.py'''
+'''fast_video.py'''
 
 # External libraries
 import cv2
@@ -21,11 +21,11 @@ parser.add_argument('videoFile',
     help='the path to the video file you want modified.')
 # parser.add_argument('-v', '--videoSpeed', type=float, default=1.0,
 #     help='the speed that the video plays at.')
-parser.add_argument('-s', '--silentSpeed', type=float, default=99999,
+parser.add_argument('--silentSpeed', '-s', type=float, default=99999,
     help='the speed that silent frames should be played at.')
-parser.add_argument('-t', '--silentThreshold', type=float, default=0.04,
+parser.add_argument('--silentThreshold', '-t', type=float, default=0.04,
     help='the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.')
-parser.add_argument('-m', '--frame_margin', type=int, default=1,
+parser.add_argument('--frameMargin', '-m', type=int, default=1,
     help='tells how many frames on either side of speech should be included.')
 args = parser.parse_args()
 
@@ -34,7 +34,7 @@ startTime = time.time()
 videoFile = args.videoFile
 NEW_SPEED = [args.silentSpeed, 1]
 silentThreshold = args.silentThreshold
-frame_margin = args.frame_margin
+frame_margin = args.frameMargin
 
 cap = cv2.VideoCapture(videoFile)
 
