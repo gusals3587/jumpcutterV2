@@ -1,32 +1,107 @@
-'''fast_video.py'''
+"""fast_video.py"""
 
 # External libraries
 import cv2
 import numpy as np
 from scipy.io import wavfile
 from audiotsm import phasevocoder
-from arrayWav import ArrReader, ArrWriter
 
 # Internal libraries
 import math
 import sys
 import time
 import os
-from datetime import timedelta
 import subprocess
 import argparse
+from shutil import rmtree
+from datetime import timedelta
+
+TEMP_FOLDER = '.TEMP'
+
+class ArrReader:
+    pointer = 0
+
+    def __init__(self, arr, channels, samplerate, samplewidth):
+        self.samples = arr
+        self._channels = channels
+        self.samplerate = samplerate
+        self.samplewidth = samplewidth
+
+    @property
+    def channels(self):
+        return self._channels
+
+    @property
+    def empty(self):
+        return self.samples.shape[0] <= self.pointer
+
+    def read(self, buffer):
+        if buffer.shape[0] != self.channels:
+            raise ValueError(
+                "the buffer should have the same number of " "channels as the ArrReader"
+            )
+
+        end = self.pointer + buffer.shape[1]
+        frames = self.samples[self.pointer : end].T.astype(np.float32)
+        n = frames.shape[1]
+        np.copyto(buffer[:, :n], frames)
+        del frames
+        self.pointer = end
+        return n
+
+    def skip(self, n):
+        pastPointer = self.pointer
+        self.pointer += n
+        return self.pointer - pastPointer
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _1, _2, _3):
+        pass
+
+
+class ArrWriter:
+    pointer = 0
+
+    def __init__(self, arr, channels, samplerate, samplewidth):
+        self._channels = channels
+        self.output = arr
+
+    @property
+    def channels(self):
+        return self._channels
+
+    def write(self, buffer):
+        if buffer.shape[0] != self.channels:
+            raise ValueError(
+                "the buffer should have the same number of" "channels as the ArrWriter"
+            )
+
+        end = self.pointer + buffer.shape[1]
+        changedBuffer = buffer.T.astype(np.int16)
+        n = buffer.shape[1]
+        self.output = np.concatenate((self.output, changedBuffer))
+        self.pointer = end
+        return n
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _1, _2, _3):
+        pass
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument('videoFile',
-    help='the path to the video file you want modified.')
+parser.add_argument("videoFile", help="the path to the video file you want modified.")
 # parser.add_argument('-v', '--videoSpeed', type=float, default=1.0,
 #     help='the speed that the video plays at.')
-parser.add_argument('--silentSpeed', '-s', type=float, default=99999,
-    help='the speed that silent frames should be played at.')
-parser.add_argument('--silentThreshold', '-t', type=float, default=0.04,
-    help='the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.')
-parser.add_argument('--frameMargin', '-m', type=int, default=1,
-    help='tells how many frames on either side of speech should be included.')
+parser.add_argument("--silentSpeed", "-s", type=float, default=99999,
+    help="the speed that silent frames should be played at.")
+parser.add_argument("--silentThreshold", "-t", type=float, default=0.04,
+    help="the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.")
+parser.add_argument("--frameMargin", "-m", type=int, default=4,
+    help="tells how many frames on either side of speech should be included.")
 args = parser.parse_args()
 
 startTime = time.time()
@@ -40,23 +115,32 @@ cap = cv2.VideoCapture(videoFile)
 
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 fps = round(cap.get(cv2.CAP_PROP_FPS))
 
-extractAudio = 'ffmpeg -i "{}" -ab 160k -ac 2 -ar 44100 -vn output.wav'.format(videoFile)
+try:
+    os.mkdir(TEMP_FOLDER)
+except OSError:
+    rmtree(TEMP_FOLDER)
+    os.mkdir(TEMP_FOLDER)
+
+extractAudio = 'ffmpeg -i "{}" -ab 160k -ac 2 -ar 44100 -vn {}/output.wav'.format(
+    videoFile, TEMP_FOLDER
+)
 subprocess.call(extractAudio, shell=True)
 
-out = cv2.VideoWriter('spedup.mp4', fourcc, fps, (width, height))
-sampleRate, audioData = wavfile.read('output.wav')
+out = cv2.VideoWriter(TEMP_FOLDER + "/spedup.mp4", fourcc, fps, (width, height))
+sampleRate, audioData = wavfile.read(TEMP_FOLDER + "/output.wav")
 
 skipped = 0
 nFrames = 0
 channels = int(audioData.shape[1])
 
+
 def getMaxVolume(s):
     maxv = np.max(s)
     minv = np.min(s)
-    return max(maxv,-minv)
+    return max(maxv, -minv)
 
 
 def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
@@ -88,7 +172,7 @@ y = np.zeros_like(audioData, dtype=np.int16)
 yPointer = 0
 frameBuffer = []
 
-while (cap.isOpened()):
+while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
@@ -97,8 +181,10 @@ while (cap.isOpened()):
     audioSampleStart = math.floor(currentTime * sampleRate)
 
     # audioSampleStart + one frame worth of samples
-    audioSampleEnd = min((audioSampleStart + ((sampleRate // fps) * frame_margin)),(len(audioData)))
-    switchEnd = (audioSampleStart + ((sampleRate // fps)))
+    audioSampleEnd = min(
+        (audioSampleStart + ((sampleRate // fps) * frame_margin)), (len(audioData))
+    )
+    switchEnd = audioSampleStart + ((sampleRate // fps))
     audioChunkMod = audioData[audioSampleStart:switchEnd]
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
@@ -108,7 +194,7 @@ while (cap.isOpened()):
         # if the frame is 'switched'
         frameBuffer.append(frame)
         normal = 0
-    else: # if it's 'loud'
+    else:  # if it's 'loud'
 
         # and the last frame is 'loud'
         if normal:
@@ -117,11 +203,11 @@ while (cap.isOpened()):
             switchStart = switchEnd
 
             yPointerEnd = yPointer + audioChunkMod.shape[0]
-            y[yPointer : yPointerEnd] = audioChunkMod
+            y[yPointer:yPointerEnd] = audioChunkMod
             yPointer = yPointerEnd
         else:
             spedChunk = audioData[switchStart:switchEnd]
-            spedupAudio = np.zeros((0,2), dtype=np.int16)
+            spedupAudio = np.zeros((0, 2), dtype=np.int16)
             with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
                 with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
                     tsm = phasevocoder(reader.channels, speed=NEW_SPEED[normal])
@@ -129,7 +215,7 @@ while (cap.isOpened()):
                     spedupAudio = writer.output
 
             yPointerEnd = yPointer + spedupAudio.shape[0]
-            y[yPointer : yPointerEnd] = spedupAudio
+            y[yPointer:yPointerEnd] = spedupAudio
             yPointer = yPointerEnd
 
             writeFrames(frameBuffer, yPointerEnd, NEW_SPEED[normal], sampleRate, out)
@@ -142,21 +228,23 @@ while (cap.isOpened()):
         skipped += 1
 
 y = y[:yPointer]
-wavfile.write("spedupAudio.wav", sampleRate, y)
+wavfile.write(TEMP_FOLDER + "/spedupAudio.wav", sampleRate, y)
 
 cap.release()
 out.release()
 cv2.destroyAllWindows()
 
-outFile = "{}_faster{}".format(videoFile[:videoFile.rfind('.')],videoFile[videoFile.rfind('.'):])
-command = "ffmpeg -y -i spedup.mp4 -i spedupAudio.wav -c:v copy -c:a aac {}".format(outFile)
+outFile = "{}_faster{}".format(
+    videoFile[: videoFile.rfind(".")], videoFile[videoFile.rfind(".") :]
+)
+command = "ffmpeg -y -i {}/spedup.mp4 -i {}/spedupAudio.wav -c:v copy -c:a aac {}".format(
+    TEMP_FOLDER, TEMP_FOLDER, outFile
+)
 subprocess.call(command, shell=True)
 
-print('Finished.')
+print("Finished.")
 timeLength = round(time.time() - startTime, 2)
 minutes = timedelta(seconds=(round(timeLength)))
-print(f'took {timeLength} seconds ({minutes})')
+print(f"took {timeLength} seconds ({minutes})")
 
-os.remove('output.wav')
-os.remove('spedup.mp4')
-os.remove('spedupAudio.wav')
+rmtree(TEMP_FOLDER)
