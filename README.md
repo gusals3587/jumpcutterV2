@@ -1,27 +1,26 @@
 # jumpcutterV2
-Automatically edits videos - Originally inspired by carykh.
+automatically edits videos, originally inspired by carykh
 
-Carykh's video: https://www.youtube.com/watch?v=DQ8orIurGxw
+original inspiration: https://www.youtube.com/watch?v=DQ8orIurGxw
 
-Carykh's program: https://github.com/carykh/jumpcutter
+the program he made: https://github.com/carykh/jumpcutter
 
+I saw some limits to the approach
+1. he extracted EVERY frame and put it into a single, giant folder. While that is easier to work with, it will require GBs, maybe even TBs of user's storage space (albeit temporary)
+2. there were some syncing issues involved if it worked with long videos
+3. while it was working on the audio, it kept making small, temp audio files that made it very slow
+
+I decided to solve it, and heavily modified the code so it can fix all those problems
 
 # Differences
-1. Can no longer specify: sounded_speed, frame_rate, and frame_quality.
-2. Can't download youtube videos
-3. Doesn't take up a large amount of space by splitting up each frame
-4. Goes much faster.
+due to the modifications, you can no longer specify silent-threshold, sounded_speed, frame_margin, frame_rate, frame_quality, that is all handled internally. (it also doesn't downlaod youtube video automatically). I tried to make the code a lot simpler but I'm open to PR request that can still enhance the repo
+
+PS, if you want sounded speech speedup, I would recommend just speeding up the video on the player
 
 # Usage
-Windows and Linux:
-`python fast_video.py {video file name} --silentSpeed {float} --silentThreshold {float}`
+`python3 fast_video.py {video file name} {silent speed(float)}`
 
-MacOs:
-`python3 fast_video.py {video file name} --silentSpeed {float} --silentThreshold {float}`
+# heads up
+I've only tested this with mp4 file, not sure about other format
 
-
-Using shorts:
-`python {video file name} -s {float} -t {float}`
-
-# Heads up
-Based on Python3
+I also use python3, not planning any backward compatibility
