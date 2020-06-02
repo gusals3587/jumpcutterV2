@@ -1,15 +1,11 @@
-#external lib
+"""long_fast_video.py"""
 
 #internal lib
-import math
 import sys
-import time
 import os
 import subprocess
 import argparse
-#import gc
 from shutil import rmtree
-from datetime import timedelta
 
 TEMP_FOLDER = '.TEMP_LONG'
 
@@ -33,20 +29,20 @@ except OSError:
     rmtree(TEMP_FOLDER)
     os.mkdir(TEMP_FOLDER)
 
-#splitting
+# splitting
 filename, filetype = os.path.splitext(videoFile)
 splitVideo = 'ffmpeg -i "{}" -acodec copy -f segment -segment_time 1800 -vcodec copy -reset_timestamps 1 -map 0 {}/%d{}'.format(
     videoFile, TEMP_FOLDER, filetype
 )
 subprocess.run(splitVideo, shell=True)
 
-#processing
+# processing
 for files in os.listdir(TEMP_FOLDER):
     videoPath = '{}/{}'.format(TEMP_FOLDER, files)
     subprocess.run(['python3', 'fast_video.py', "-s", str(args.silentSpeed), "-m", str(args.frameMargin), "-t", str(args.silentThreshold), videoPath])
     os.remove(videoPath)
 
-#mergeing
+# mergeing
 generateFile = "for f in ./{}/*.mp4; do echo \"file '$f'\" >> mylist.txt; done".format(TEMP_FOLDER)
 os.system(generateFile)
 concatVideo = "ffmpeg -f concat -safe 0 -i mylist.txt -c copy {}_faster.mp4".format(filename)
