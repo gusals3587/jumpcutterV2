@@ -1,5 +1,3 @@
-"""fast_video.py"""
-
 # External libraries
 import cv2
 import numpy as np
@@ -38,7 +36,7 @@ class ArrReader:
     def read(self, buffer):
         if buffer.shape[0] != self.channels:
             raise ValueError(
-                "the buffer should have the same number of " "channels as the ArrReader"
+                "the buffer should have the same number of channels as the ArrReader"
             )
 
         end = self.pointer + buffer.shape[1]
@@ -75,7 +73,7 @@ class ArrWriter:
     def write(self, buffer):
         if buffer.shape[0] != self.channels:
             raise ValueError(
-                "the buffer should have the same number of" "channels as the ArrWriter"
+                "the buffer should have the same number of channels as the ArrWriter"
             )
 
         end = self.pointer + buffer.shape[1]
@@ -124,10 +122,9 @@ except OSError:
     rmtree(TEMP_FOLDER)
     os.mkdir(TEMP_FOLDER)
 
-extractAudio = 'ffmpeg -i "{}" -ab 160k -ac 2 -ar 44100 -vn {}/output.wav'.format(
-    videoFile, TEMP_FOLDER
-)
-subprocess.call(extractAudio, shell=True)
+extractAudio = ["ffmpeg", "-i", videoFile, "-ab", "160k", "-ac", "2", "-ar", "44100",
+    "-vn", f"{TEMP_FOLDER}/output.wav"]
+subprocess.call(extractAudio)
 
 out = cv2.VideoWriter(TEMP_FOLDER + "/spedup.mp4", fourcc, fps, (width, height))
 sampleRate, audioData = wavfile.read(TEMP_FOLDER + "/output.wav")
@@ -163,11 +160,6 @@ normal = 0
 switchStart = 0
 maxVolume = getMaxVolume(audioData)
 
-# not used:
-# fadeInSamples = 400
-# preMask = np.arange(fadeInSamples)/fadeInSamples
-# mask = np.repeat(preMask[:, np.newaxis], 2, axis = 1)
-
 y = np.zeros_like(audioData, dtype=np.int16)
 yPointer = 0
 frameBuffer = []
@@ -194,8 +186,7 @@ while cap.isOpened():
         # if the frame is 'switched'
         frameBuffer.append(frame)
         normal = 0
-    else:  # if it's 'loud'
-
+    else:
         # and the last frame is 'loud'
         if normal:
             out.write(frame)
@@ -210,8 +201,7 @@ while cap.isOpened():
             spedupAudio = np.zeros((0, 2), dtype=np.int16)
             with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
                 with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
-                    tsm = phasevocoder(reader.channels, speed=NEW_SPEED[normal])
-                    tsm.run(reader, writer)
+                    phasevocoder(reader.channels, speed=NEW_SPEED[normal]).run(reader, writer)
                     spedupAudio = writer.output
 
             yPointerEnd = yPointer + spedupAudio.shape[0]
@@ -230,6 +220,9 @@ while cap.isOpened():
 y = y[:yPointer]
 wavfile.write(TEMP_FOLDER + "/spedupAudio.wav", sampleRate, y)
 
+if not os.path.isfile(TEMP_FOLDER + "/spedupAudio.wav"):
+    raise IOError(f'the new audio file was not created')
+
 cap.release()
 out.release()
 cv2.destroyAllWindows()
@@ -237,14 +230,24 @@ cv2.destroyAllWindows()
 outFile = "{}_faster{}".format(
     videoFile[: videoFile.rfind(".")], videoFile[videoFile.rfind(".") :]
 )
-command = "ffmpeg -y -i {}/spedup.mp4 -i {}/spedupAudio.wav -c:v copy -c:a aac {}".format(
-    TEMP_FOLDER, TEMP_FOLDER, outFile
-)
-subprocess.call(command, shell=True)
+command = ["ffmpeg", "-y", "-i", f'{TEMP_FOLDER}/spedup.mp4', "-i",
+    f'{TEMP_FOLDER}/spedupAudio.wav', "-c:v", "copy", "-c:a", "aac", outFile]
+subprocess.call(command)
 
 print("Finished.")
 timeLength = round(time.time() - startTime, 2)
 minutes = timedelta(seconds=(round(timeLength)))
 print(f"took {timeLength} seconds ({minutes})")
+
+if not os.path.isfile(outFile):
+    raise IOError(f'the file {outFile} was not created')
+
+try: # should work on Windows
+    os.startfile(outFile)
+except AttributeError:
+    try: # should work on MacOS and most linux versions
+        subprocess.call(['open', outFile])
+    except:
+        print('could not open output file')
 
 rmtree(TEMP_FOLDER)
