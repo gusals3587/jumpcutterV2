@@ -177,14 +177,14 @@ while cap.isOpened():
     audioSampleStart = math.floor(currentTime * sampleRate)
 
     audioSampleEnd = min(
-        (audioSampleStart + ((sampleRate // fps) * frame_margin)), (len(audioData))
+        audioSampleStart + sampleRate // fps * frame_margin, len(audioData)
     )
-    switchEnd = audioSampleStart + ((sampleRate // fps))
-    audioChunkMod = audioData[audioSampleStart:switchEnd]
+    switchEnd = audioSampleStart + sampleRate // fps
+
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
     if getMaxVolume(audioChunk) / maxVolume < silentThreshold:
-        if(endMargin < 1):
+        if endMargin < 1:
             isSilent = 1
         else:
             isSilent = 0
@@ -202,7 +202,7 @@ while cap.isOpened():
         frameBuffer.append(frame)
     else:
         theSpeed = NEW_SPEED[isSilent]
-        if(theSpeed < 99999):
+        if theSpeed < 99999:
             spedChunk = audioData[switchStart:switchEnd]
             spedupAudio = np.zeros((0, 2), dtype=np.int16)
             with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
