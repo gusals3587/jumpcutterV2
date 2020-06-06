@@ -15,6 +15,7 @@ from shutil import rmtree
 from datetime import timedelta
 
 TEMP = ".TEMP"
+FADE_SIZE = 400
 
 class ArrReader:
     pointer = 0
@@ -159,10 +160,14 @@ maxVolume = getMaxVolume(audioData)
 
 needChange = False
 preve = None
+endMargin = 0
 
 y = np.zeros_like(audioData, dtype=np.int16)
 yPointer = 0
 frameBuffer = []
+
+premask = np.arange(FADE_SIZE) / FADE_SIZE
+mask = np.repeat(premask[:, np.newaxis], 2, axis=1)
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -179,21 +184,24 @@ while cap.isOpened():
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
     if getMaxVolume(audioChunk) / maxVolume < silentThreshold:
-        silentOrLoud = 1
+        if(endMargin < 1):
+            isSilent = 1
+        else:
+            isSilent = 0
+            endMargin -= 1
     else:
-        silentOrLoud = 0
-
-    if preve is not None and preve != silentOrLoud:
+        isSilent = 0
+        endMargin = frame_margin
+    if preve is not None and preve != isSilent:
         needChange = True
 
-    preve = silentOrLoud
+    preve = isSilent
 
     if needChange == False:
         skipped += 1
         frameBuffer.append(frame)
     else:
-        theSpeed = NEW_SPEED[silentOrLoud]
-
+        theSpeed = NEW_SPEED[isSilent]
         if(theSpeed < 99999):
             spedChunk = audioData[switchStart:switchEnd]
             spedupAudio = np.zeros((0, 2), dtype=np.int16)
@@ -204,27 +212,30 @@ while cap.isOpened():
 
             yPointerEnd = yPointer + spedupAudio.shape[0]
             y[yPointer:yPointerEnd] = spedupAudio
-            yPointer = yPointerEnd
 
+            if spedupAudio.shape[0] < FADE_SIZE:
+                y[yPointer:yPointerEnd] = 0
+            else:
+                y[yPointer:yPointer+FADE_SIZE] = (y[yPointer:yPointer+FADE_SIZE] * mask)
+                y[yPointerEnd-FADE_SIZE:yPointerEnd] = (y[yPointerEnd-FADE_SIZE:yPointerEnd] * 1-mask)
+            yPointer = yPointerEnd
         else:
             yPointerEnd = yPointer
 
-        writeFrames(frameBuffer, yPointerEnd, NEW_SPEED[silentOrLoud], sampleRate, out)
+        writeFrames(frameBuffer, yPointerEnd, NEW_SPEED[isSilent], sampleRate, out)
         frameBuffer = []
         switchStart = switchEnd
-
         needChange = False
 
     if skipped % 200 == 0:
         print(f"{skipped} frames inspected")
         skipped += 1
 
-
 y = y[:yPointer]
 wavfile.write(TEMP + "/spedupAudio.wav", sampleRate, y)
 
 if not os.path.isfile(TEMP + "/spedupAudio.wav"):
-    raise IOError(f"the new audio file was not created")
+    raise IOError("the new audio file was not created")
 
 cap.release()
 out.release()
