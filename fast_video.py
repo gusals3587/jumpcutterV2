@@ -14,7 +14,7 @@ import argparse
 from shutil import rmtree
 from datetime import timedelta
 
-TEMP_FOLDER = '.TEMP'
+TEMP = ".TEMP"
 
 class ArrReader:
     pointer = 0
@@ -117,17 +117,17 @@ fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 fps = round(cap.get(cv2.CAP_PROP_FPS))
 
 try:
-    os.mkdir(TEMP_FOLDER)
+    os.mkdir(TEMP)
 except OSError:
-    rmtree(TEMP_FOLDER)
-    os.mkdir(TEMP_FOLDER)
+    rmtree(TEMP)
+    os.mkdir(TEMP)
 
 extractAudio = ["ffmpeg", "-i", videoFile, "-ab", "160k", "-ac", "2", "-ar", "44100",
-    "-vn", f"{TEMP_FOLDER}/output.wav"]
+    "-vn", f"{TEMP}/output.wav", "-nostats", "-loglevel", "0"]
 subprocess.call(extractAudio)
 
-out = cv2.VideoWriter(TEMP_FOLDER + "/spedup.mp4", fourcc, fps, (width, height))
-sampleRate, audioData = wavfile.read(TEMP_FOLDER + "/output.wav")
+out = cv2.VideoWriter(TEMP + "/spedup.mp4", fourcc, fps, (width, height))
+sampleRate, audioData = wavfile.read(TEMP + "/output.wav")
 
 skipped = 0
 nFrames = 0
@@ -144,7 +144,6 @@ def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
     numAudioChunks = round(nAudio / samplePerSecond * fps)
     global nFrames
     numWrites = numAudioChunks - nFrames
-    # a = [1, 2, 3], len(a) == 3 but a[3] is error
     limit = len(frames) - 1
     for i in range(numWrites):
         frameIndex = round(i * speed)
@@ -156,7 +155,6 @@ def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
 
 
 normal = 0
-# 0 for silent, 1 for normal
 switchStart = 0
 maxVolume = getMaxVolume(audioData)
 
@@ -180,15 +178,14 @@ while cap.isOpened():
     audioChunkMod = audioData[audioSampleStart:switchEnd]
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
-    # if it's quite
     if getMaxVolume(audioChunk) / maxVolume < silentThreshold:
         skipped += 1
-        # if the frame is 'switched'
         frameBuffer.append(frame)
         normal = 0
+        print('silent frames')
     else:
-        # and the last frame is 'loud'
         if normal:
+            print('normal')
             out.write(frame)
             nFrames += 1
             switchStart = switchEnd
@@ -197,6 +194,8 @@ while cap.isOpened():
             y[yPointer:yPointerEnd] = audioChunkMod
             yPointer = yPointerEnd
         else:
+            print('write silent frames to audio file and stuff')
+
             spedChunk = audioData[switchStart:switchEnd]
             spedupAudio = np.zeros((0, 2), dtype=np.int16)
             with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
@@ -213,25 +212,27 @@ while cap.isOpened():
             switchStart = switchEnd
 
         normal = 1
-    if skipped % 500 == 0:
-        print("{} frames inspected".format(skipped))
+    if skipped % 200 == 0:
+        #print(f"{skipped} frames inspected")
         skipped += 1
 
 y = y[:yPointer]
-wavfile.write(TEMP_FOLDER + "/spedupAudio.wav", sampleRate, y)
+wavfile.write(TEMP + "/spedupAudio.wav", sampleRate, y)
 
-if not os.path.isfile(TEMP_FOLDER + "/spedupAudio.wav"):
-    raise IOError(f'the new audio file was not created')
+if not os.path.isfile(TEMP + "/spedupAudio.wav"):
+    raise IOError(f"the new audio file was not created")
 
 cap.release()
 out.release()
 cv2.destroyAllWindows()
 
-outFile = "{}_faster{}".format(
-    videoFile[: videoFile.rfind(".")], videoFile[videoFile.rfind(".") :]
-)
-command = ["ffmpeg", "-y", "-i", f'{TEMP_FOLDER}/spedup.mp4', "-i",
-    f'{TEMP_FOLDER}/spedupAudio.wav', "-c:v", "copy", "-c:a", "aac", outFile]
+first = videoFile[:videoFile.rfind(".")]
+extension = videoFile[videoFile.rfind(".") :]
+
+outFile = f"{first}_faster{extension}"
+
+command = ["ffmpeg", "-y", "-i", f"{TEMP}/spedup.mp4", "-i", f"{TEMP}/spedupAudio.wav",
+    "-c:v", "copy", "-c:a", "aac", outFile, "-nostats", "-loglevel", "0"]
 subprocess.call(command)
 
 print("Finished.")
@@ -240,14 +241,14 @@ minutes = timedelta(seconds=(round(timeLength)))
 print(f"took {timeLength} seconds ({minutes})")
 
 if not os.path.isfile(outFile):
-    raise IOError(f'the file {outFile} was not created')
+    raise IOError(f"the file {outFile} was not created")
 
 try: # should work on Windows
     os.startfile(outFile)
 except AttributeError:
     try: # should work on MacOS and most linux versions
-        subprocess.call(['open', outFile])
+        subprocess.call(["open", outFile])
     except:
-        print('could not open output file')
+        print("could not open output file")
 
-rmtree(TEMP_FOLDER)
+rmtree(TEMP)
