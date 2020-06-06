@@ -154,7 +154,6 @@ def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
             writer.write(frames[frameIndex])
 
 
-normal = 0
 switchStart = 0
 maxVolume = getMaxVolume(audioData)
 
@@ -189,22 +188,26 @@ while cap.isOpened():
 
     preve = silentOrLoud
 
-    theSpeed = NEW_SPEED[silentOrLoud]
-
     if needChange == False:
         skipped += 1
         frameBuffer.append(frame)
     else:
-        spedChunk = audioData[switchStart:switchEnd]
-        spedupAudio = np.zeros((0, 2), dtype=np.int16)
-        with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
-            with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
-                phasevocoder(reader.channels, speed=theSpeed).run(reader, writer)
-                spedupAudio = writer.output
+        theSpeed = NEW_SPEED[silentOrLoud]
 
-        yPointerEnd = yPointer + spedupAudio.shape[0]
-        y[yPointer:yPointerEnd] = spedupAudio
-        yPointer = yPointerEnd
+        if(theSpeed < 99999):
+            spedChunk = audioData[switchStart:switchEnd]
+            spedupAudio = np.zeros((0, 2), dtype=np.int16)
+            with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
+                with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
+                    phasevocoder(reader.channels, speed=theSpeed).run(reader, writer)
+                    spedupAudio = writer.output
+
+            yPointerEnd = yPointer + spedupAudio.shape[0]
+            y[yPointer:yPointerEnd] = spedupAudio
+            yPointer = yPointerEnd
+
+        else:
+            yPointerEnd = yPointer
 
         writeFrames(frameBuffer, yPointerEnd, NEW_SPEED[silentOrLoud], sampleRate, out)
         frameBuffer = []
