@@ -92,8 +92,8 @@ class ArrWriter:
 
 parser = argparse.ArgumentParser()
 parser.add_argument("videoFile", help="the path to the video file you want modified.")
-# parser.add_argument('-v', '--videoSpeed', type=float, default=1.0,
-#     help='the speed that the video plays at.')
+parser.add_argument("--videoSpeed", "-v", type=float, default=1.0,
+    help="the speed that the video plays at.")
 parser.add_argument("--silentSpeed", "-s", type=float, default=99999,
     help="the speed that silent frames should be played at.")
 parser.add_argument("--silentThreshold", "-t", type=float, default=0.04,
@@ -105,7 +105,7 @@ args = parser.parse_args()
 startTime = time.time()
 
 videoFile = args.videoFile
-NEW_SPEED = [args.silentSpeed, 1]
+NEW_SPEED = [args.silentSpeed, args.videoSpeed]
 silentThreshold = args.silentThreshold
 frame_margin = args.frameMargin
 
@@ -144,6 +144,7 @@ def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
     numAudioChunks = round(nAudio / samplePerSecond * fps)
     global nFrames
     numWrites = numAudioChunks - nFrames
+    nFrames += numWrites # if sync issue exists, change this back
     limit = len(frames) - 1
     for i in range(numWrites):
         frameIndex = round(i * speed)
@@ -151,12 +152,14 @@ def writeFrames(frames, nAudio, speed, samplePerSecond, writer):
             writer.write(frames[-1])
         else:
             writer.write(frames[frameIndex])
-        nFrames += 1
 
 
 normal = 0
 switchStart = 0
 maxVolume = getMaxVolume(audioData)
+
+needChange = False
+preve = None
 
 y = np.zeros_like(audioData, dtype=np.int16)
 yPointer = 0
@@ -166,11 +169,9 @@ while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
-    # since samplerate is in seconds, I need to convert this to second as well
     currentTime = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
     audioSampleStart = math.floor(currentTime * sampleRate)
 
-    # audioSampleStart + one frame worth of samples
     audioSampleEnd = min(
         (audioSampleStart + ((sampleRate // fps) * frame_margin)), (len(audioData))
     )
@@ -179,42 +180,42 @@ while cap.isOpened():
     audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
     if getMaxVolume(audioChunk) / maxVolume < silentThreshold:
+        silentOrLoud = 1
+    else:
+        silentOrLoud = 0
+
+    if preve is not None and preve != silentOrLoud:
+        needChange = True
+
+    preve = silentOrLoud
+
+    theSpeed = NEW_SPEED[silentOrLoud]
+
+    if needChange == False:
         skipped += 1
         frameBuffer.append(frame)
-        normal = 0
-        print('silent frames')
     else:
-        if normal:
-            print('normal')
-            out.write(frame)
-            nFrames += 1
-            switchStart = switchEnd
+        spedChunk = audioData[switchStart:switchEnd]
+        spedupAudio = np.zeros((0, 2), dtype=np.int16)
+        with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
+            with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
+                phasevocoder(reader.channels, speed=theSpeed).run(reader, writer)
+                spedupAudio = writer.output
 
-            yPointerEnd = yPointer + audioChunkMod.shape[0]
-            y[yPointer:yPointerEnd] = audioChunkMod
-            yPointer = yPointerEnd
-        else:
-            print('write silent frames to audio file and stuff')
+        yPointerEnd = yPointer + spedupAudio.shape[0]
+        y[yPointer:yPointerEnd] = spedupAudio
+        yPointer = yPointerEnd
 
-            spedChunk = audioData[switchStart:switchEnd]
-            spedupAudio = np.zeros((0, 2), dtype=np.int16)
-            with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
-                with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
-                    phasevocoder(reader.channels, speed=NEW_SPEED[normal]).run(reader, writer)
-                    spedupAudio = writer.output
+        writeFrames(frameBuffer, yPointerEnd, NEW_SPEED[silentOrLoud], sampleRate, out)
+        frameBuffer = []
+        switchStart = switchEnd
 
-            yPointerEnd = yPointer + spedupAudio.shape[0]
-            y[yPointer:yPointerEnd] = spedupAudio
-            yPointer = yPointerEnd
+        needChange = False
 
-            writeFrames(frameBuffer, yPointerEnd, NEW_SPEED[normal], sampleRate, out)
-            frameBuffer = []
-            switchStart = switchEnd
-
-        normal = 1
     if skipped % 200 == 0:
-        #print(f"{skipped} frames inspected")
+        print(f"{skipped} frames inspected")
         skipped += 1
+
 
 y = y[:yPointer]
 wavfile.write(TEMP + "/spedupAudio.wav", sampleRate, y)
