@@ -1,5 +1,3 @@
-numpy
 scipy
 audiotsm
 opencv-python
-
