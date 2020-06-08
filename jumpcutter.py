@@ -90,6 +90,9 @@ except AttributeError:
     try:  # should work on MacOS and most linux versions
         subprocess.call(["open", outFile])
     except:
-        print("could not open output file")
+        try: # should work on WSL2
+            subprocess.call(["cmd.exe", "/C", "start", outFile])
+        except:
+            print("could not open output file")
 
 rmtree(TEMP_FOLDER)
