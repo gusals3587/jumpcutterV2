@@ -17,7 +17,6 @@ from datetime import timedelta
 
 nFrames = 0
 
-
 def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
     videoFile = videoFile
     silentSpeed = silentSpeed
@@ -41,22 +40,10 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
         rmtree(TEMP)
         os.mkdir(TEMP)
 
-    extractAudio = [
-        "ffmpeg",
-        "-i",
-        videoFile,
-        "-ab",
-        "160k",
-        "-ac",
-        "2",
-        "-ar",
-        "44100",
-        "-vn",
-        f"{TEMP}/output.wav",
-        "-nostats",
-        "-loglevel",
-        "0",
-    ]
+    extractAudio = ["ffmpeg", "-i", videoFile, "-ab", "160k", "-ac", "2", "-ar"]
+    extractAudio.extend(["44100", "-vn", f"{TEMP}/output.wav", "-nostats", "-loglevel"])
+    extractAudio.extend(["0"])
+
     subprocess.call(extractAudio)
 
     out = cv2.VideoWriter(TEMP + "/spedup.mp4", fourcc, fps, (width, height))
@@ -66,9 +53,12 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
     channels = int(audioData.shape[1])
 
     def getMaxVolume(s):
-        maxv = np.max(s)
-        minv = np.min(s)
-        return max(maxv, -minv)
+        try:
+            maxv = np.max(s)
+            minv = np.min(s)
+            return max(maxv, -minv)
+        except ValueError:
+            return 1
 
     switchStart = 0
     maxVolume = getMaxVolume(audioData)
@@ -180,23 +170,10 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
 
     outFile = f"{first}_faster{extension}"
 
-    command = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        f"{TEMP}/spedup.mp4",
-        "-i",
-        f"{TEMP}/spedupAudio.wav",
-        "-c:v",
-        "copy",
-        "-c:a",
-        "aac",
-        outFile,
-        "-nostats",
-        "-loglevel",
-        "0",
-    ]
-    subprocess.call(command)
+    cmd = ["ffmpeg", "-y", "-i", f"{TEMP}/spedup.mp4", "-i"]
+    cmd.extend([f"{TEMP}/spedupAudio.wav", "-c:v", "copy", "-c:a", "aac", outFile])
+    cmd.extend(["-nostats", "-loglevel", "0"])
+    subprocess.call(cmd)
 
     if not os.path.isfile(outFile):
         raise IOError(f"the file {outFile} was not created")
