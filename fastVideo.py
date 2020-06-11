@@ -2,8 +2,6 @@
 import cv2
 import numpy as np
 from scipy.io import wavfile
-from audiotsm import phasevocoder
-from readAudio import ArrReader, ArrWriter
 
 # Internal libraries
 import math
@@ -15,9 +13,7 @@ import argparse
 from shutil import rmtree
 from datetime import timedelta
 
-nFrames = 0
-
-def getAudioChunks(audioData, sampleRate, frameRate, SILENT_THRESHOLD, LOUD_THRESHOLD, FRAME_SPREADAGE):
+def getAudioChunks(audioData, sampleRate, frameRate, SILENT_THRESHOLD, FRAME_SPREADAGE):
 
     def getMaxVolume(s):
         maxv = float(np.max(s))
@@ -36,9 +32,7 @@ def getAudioChunks(audioData, sampleRate, frameRate, SILENT_THRESHOLD, LOUD_THRE
         end = min(int((i+1) * samplesPerFrame), audioSampleCount)
         audiochunks = audioData[start:end]
         maxchunksVolume = getMaxVolume(audiochunks) / maxAudioVolume
-        if(maxchunksVolume >= LOUD_THRESHOLD):
-            hasLoudAudio[i] = 2
-        elif(maxchunksVolume >= SILENT_THRESHOLD):
+        if(maxchunksVolume >= SILENT_THRESHOLD):
             hasLoudAudio[i] = 1
 
     chunks = [[0, 0, 0]]
@@ -56,16 +50,9 @@ def getAudioChunks(audioData, sampleRate, frameRate, SILENT_THRESHOLD, LOUD_THRE
 
     return chunks
 
-def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
-    videoFile = videoFile
-    silentSpeed = silentSpeed
-    videoSpeed = videoSpeed
-    silentThreshold = silentThreshold
-    frameMargin = frameMargin
+def fastVideo(videoFile, silentThreshold, frameMargin):
 
     TEMP = ".TEMP"
-    FADE_SIZE = 400
-    NEW_SPEED = [silentSpeed, videoSpeed]
 
     cap = cv2.VideoCapture(videoFile)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -88,14 +75,13 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
     out = cv2.VideoWriter(TEMP + "/spedup.mp4", fourcc, fps, (width, height))
     sampleRate, audioData = wavfile.read(TEMP + "/output.wav")
 
-    chunks = getAudioChunks(audioData, sampleRate, fps, silentThreshold, 2, frameMargin)
+    chunks = getAudioChunks(audioData, sampleRate, fps, silentThreshold, frameMargin)
 
     channels = int(audioData.shape[1])
 
     y = np.zeros_like(audioData, dtype=np.int16)
     yPointer = 0
     samplesPerFrame = sampleRate / fps
-
 
     premask = np.arange(FADE_SIZE) / FADE_SIZE
     mask = np.repeat(premask[:, np.newaxis], 2, axis=1)
@@ -113,7 +99,6 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
         audioSampleStart = int(currentTime * sampleRate)
         audioSampleEnd = audioSampleStart + (sampleRate // fps)
         switchEnd = audioSampleEnd
-
 
         audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
@@ -133,7 +118,6 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
             yPointerEnd = yPointer + audioChunk.shape[0]
             y[yPointer : yPointerEnd] = audioChunk
             yPointer = yPointerEnd
-
 
     # finish audio
     y = y[:yPointer]
@@ -161,9 +145,4 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
 
     rmtree(TEMP)
 
-
-if(__name__ == '__main__'):
-    # for testing purposes
-    subprocess.call('rm /Users/wyattblue/media/1m_faster.mp4', shell=True)
-    fastVideo('/Users/wyattblue/media/1m.mp4', 99999, 1, 0.04, 4)
-    subprocess.call('open /Users/wyattblue/media/1m_faster.mp4', shell=True)
+    subprocess.call(['open', outFile])
