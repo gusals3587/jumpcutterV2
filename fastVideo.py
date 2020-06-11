@@ -83,8 +83,8 @@ def fastVideo(videoFile, silentThreshold, frameMargin):
     yPointer = 0
     samplesPerFrame = sampleRate / fps
 
-    premask = np.arange(FADE_SIZE) / FADE_SIZE
-    mask = np.repeat(premask[:, np.newaxis], 2, axis=1)
+    # premask = np.arange(FADE_SIZE) / FADE_SIZE
+    # mask = np.repeat(premask[:, np.newaxis], 2, axis=1)
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -144,5 +144,3 @@ def fastVideo(videoFile, silentThreshold, frameMargin):
         raise IOError(f"the file {outFile} was not created")
 
     rmtree(TEMP)
-
-    subprocess.call(['open', outFile])

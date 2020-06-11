@@ -9,34 +9,10 @@ TEMP_FOLDER = ".TEMP_LONG"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("videoFile", help="the path to the video file you want modified.")
-parser.add_argument(
-    "-v",
-    "--videoSpeed",
-    type=float,
-    default=1.0,
-    help="the speed that the video plays at.",
-)
-parser.add_argument(
-    "--silentSpeed",
-    "-s",
-    type=float,
-    default=99999,
-    help="the speed that silent frames should be played at.",
-)
-parser.add_argument(
-    "--silentThreshold",
-    "-t",
-    type=float,
-    default=0.04,
-    help="the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.",
-)
-parser.add_argument(
-    "--frameMargin",
-    "-m",
-    type=int,
-    default=4,
-    help="tells how many frames on either side of speech should be included.",
-)
+parser.add_argument("--silentThreshold", "-t", type=float, default=0.04,
+    help="the volume that frames audio needs to surpass to be sounded. It ranges from 0 to 1.")
+parser.add_argument("--frameMargin", "-m", type=int, default=4,
+    help="tells how many frames on either side of speech should be included.")
 args = parser.parse_args()
 
 videoFile = args.videoFile
@@ -57,13 +33,7 @@ subprocess.call(splitVideo, shell=True)
 # processing
 for files in os.listdir(TEMP_FOLDER):
     videoPath = "{}/{}".format(TEMP_FOLDER, files)
-    fastVideo(
-        videoPath,
-        args.silentSpeed,
-        args.videoSpeed,
-        args.silentThreshold,
-        args.frameMargin,
-    )
+    fastVideo(videoPath, args.silentThreshold, args.frameMargin)
     os.remove(videoPath)
 
 # mergeing
