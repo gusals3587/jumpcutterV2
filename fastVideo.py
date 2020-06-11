@@ -90,18 +90,12 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
 
     chunks = getAudioChunks(audioData, sampleRate, fps, silentThreshold, 2, frameMargin)
 
-    skipped = 0
     channels = int(audioData.shape[1])
-
-    switchStart = 0
-
-    needChange = False
-    preve = None
-    endMargin = 0
 
     y = np.zeros_like(audioData, dtype=np.int16)
     yPointer = 0
-    frameBuffer = []
+    samplesPerFrame = sampleRate / fps
+
 
     premask = np.arange(FADE_SIZE) / FADE_SIZE
     mask = np.repeat(premask[:, np.newaxis], 2, axis=1)
@@ -110,31 +104,16 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
         ret, frame = cap.read()
         if not ret:
             break
+
         cframe = int(cap.get(cv2.CAP_PROP_POS_FRAMES)) # current frame
 
-        # we are rewriting the function so it uses chunks to determine cuts
-        state = None
-        for chunk in chunks:
-            if(cframe >= chunk[0] and cframe <= chunk[1]):
-                state = chunk[2]
-                break
-
-        if(state is not None):
-            if(state == 1):
-                out.write(frame)
-        else:
-            print('error')
-            sys.exit()
+        currentTime = cframe / fps
 
         # handle audio
-
-        currentTime = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
-        audioSampleStart = math.floor(currentTime * sampleRate)
-        audioSampleStart = math.floor(currentTime * sampleRate)
-
+        audioSampleStart = int(currentTime * sampleRate)
         audioSampleEnd = audioSampleStart + (sampleRate // fps)
-
         switchEnd = audioSampleEnd
+
 
         audioChunk = audioData[audioSampleStart:audioSampleEnd]
 
@@ -147,25 +126,14 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
                     normal = False
                 break
         if(state == 1):
-            if(normal):
-                switchStart = switchEnd
+            out.write(frame)
 
-                yPointerEnd = yPointer + audioChunk.shape[0]
-                y[yPointer : yPointerEnd] = audioChunk
-                yPointer = yPointerEnd
-            else:
-                spedChunk = audioData[switchStart:switchEnd]
-                spedupAudio = np.zeros((0,2), dtype=np.int16)
-                with ArrReader(spedChunk, channels, sampleRate, 2) as reader:
-                    with ArrWriter(spedupAudio, channels, sampleRate, 2) as writer:
-                        phasevocoder(reader.channels, speed=silentSpeed).run(reader, writer)
-                        spedupAudio = writer.output
+            switchStart = switchEnd
 
-                yPointerEnd = yPointer + spedupAudio.shape[0]
-                y[yPointer : yPointerEnd] = spedupAudio
-                yPointer = yPointerEnd
+            yPointerEnd = yPointer + audioChunk.shape[0]
+            y[yPointer : yPointerEnd] = audioChunk
+            yPointer = yPointerEnd
 
-                switchStart = switchEnd
 
     # finish audio
     y = y[:yPointer]
@@ -194,7 +162,8 @@ def fastVideo(videoFile, silentSpeed, videoSpeed, silentThreshold, frameMargin):
     rmtree(TEMP)
 
 
-
 if(__name__ == '__main__'):
     # for testing purposes
+    subprocess.call('rm /Users/wyattblue/media/1m_faster.mp4', shell=True)
     fastVideo('/Users/wyattblue/media/1m.mp4', 99999, 1, 0.04, 4)
+    subprocess.call('open /Users/wyattblue/media/1m_faster.mp4', shell=True)
